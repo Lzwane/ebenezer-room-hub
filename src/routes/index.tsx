@@ -131,20 +131,28 @@ function Dashboard() {
       unpaid = 0,
       due = 0,
       expected = 0,
-      collected = 0;
+      collected = 0,
+      occupiedCount = 0;
       
-    tenants.forEach((t) => {
+    // Loop through all 16 room spaces
+    Array.from({ length: TOTAL_ROOMS }, (_, i) => i + 1).forEach((roomNum) => {
+      const t = byRoom.get(roomNum);
       const s = paymentStatusForMonth(t, payments, selectedMonth);
-      expected += s.due;
-      collected += s.paid;
       
-      if (isPast29th) {
-        unpaid++;
-      } else {
-        if (s.label === "Paid") paid++;
-        else if (s.label === "Partial") partial++;
-        else if (s.label === "Unpaid") unpaid++;
-        else due++;
+      // We only compute stats and count occupancy if a tenant actually exists and is NOT vacant this month!
+      if (t && s.label !== "Vacant") {
+        occupiedCount++;
+        expected += s.due;
+        collected += s.paid;
+        
+        if (isPast29th) {
+          unpaid++;
+        } else {
+          if (s.label === "Paid") paid++;
+          else if (s.label === "Partial") partial++;
+          else if (s.label === "Unpaid") unpaid++;
+          else due++;
+        }
       }
     });
     
@@ -154,9 +162,9 @@ function Dashboard() {
       due = 0;
     }
 
-    const available = TOTAL_ROOMS - tenants.length;
-    return { paid, partial, unpaid, due, available, expected, collected };
-  }, [tenants, payments, selectedMonth, isPast29th]);
+    const available = TOTAL_ROOMS - occupiedCount;
+    return { paid, partial, unpaid, due, available, expected, collected, occupiedCount };
+  }, [byRoom, payments, selectedMonth, isPast29th]);
 
   function openAdd(roomNumber: number) {
     setTenantDialog({ open: true, form: emptyForm(roomNumber), mode: "add" });
@@ -291,7 +299,7 @@ function Dashboard() {
       {/* Summary Metrics Cards Grid */}
       <section className="mx-auto max-w-7xl px-6 pt-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <StatCard icon={<Home className="h-4 w-4" />} label="Occupied" value={`${tenants.length}/${TOTAL_ROOMS}`} tone="primary" />
+          <StatCard icon={<Home className="h-4 w-4" />} label="Occupied" value={`${summary.occupiedCount}/${TOTAL_ROOMS}`} tone="primary"/>
           <StatCard icon={<CheckCircle2 className="h-4 w-4" />} label="Paid" value={String(summary.paid)} tone="success" />
           <StatCard icon={<AlertTriangle className="h-4 w-4" />} label="Partial" value={String(summary.partial)} tone="warning" />
           <StatCard icon={<XCircle className="h-4 w-4" />} label="Unpaid" value={String(summary.unpaid)} tone="danger" />
@@ -299,7 +307,7 @@ function Dashboard() {
           <StatCard icon={<Wallet className="h-4 w-4" />} label="Collected" value={formatZAR(summary.collected)} hint={`of ${formatZAR(summary.expected)}`} tone="muted" />
         </div>
       </section>
-
+      
       {/* Rooms Grid */}
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-4 flex items-center justify-between">

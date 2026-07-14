@@ -156,6 +156,7 @@ export function paymentStatusForMonth(
   monthKey = currentMonthKey(),
   today = new Date(),
 ): PaymentStatus {
+
   if (!tenant || tenant.vacatedMonths?.includes(monthKey)) {
     return { label: "Vacant", tone: "muted", paid: 0, due: 0, balance: 0, overdue: false };
   }
@@ -176,7 +177,6 @@ export function paymentStatusForMonth(
   }
   if (balance === 0) return { label: "Paid", tone: "success", paid, due, balance, overdue: false };
   
-  // Past or newly rolled-over months with zero payment default strictly to Unpaid
   if (balance > 0 && paid === 0) {
     return { label: "Unpaid", tone: "danger", paid, due, balance, overdue: true };
   }
